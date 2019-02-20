@@ -1,22 +1,55 @@
-import React, { Component } from 'react';
+import React, { Component, Fragment } from 'react';
 import './app.css';
 import ReactImage from './react.png';
+import Parser from 'html-react-parser';
 
 export default class App extends Component {
-  state = { username: null };
+  constructor(props) {
+    super(props);
+    this.state = {
+      url: '',
+      location: ''
+    };
+  }
 
-  componentDidMount() {
-    fetch('/api/getUsername')
-      .then(res => res.json())
-      .then(user => this.setState({ username: user.username }));
+  onChange(e) {
+    this.setState({
+      url: e.target.value
+    });
+  }
+
+  onSubmit(e) {
+    e.preventDefault();
+
+    fetch('/api/web', {
+      method: "POST",
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: this.state.url })
+    }).then(res => res.json()).then(result => {
+        this.setState({
+          location: result
+        });
+      }).catch(err => {
+        if (err) {
+          console.log(err);
+          alert(err.message);
+        }
+      });
   }
 
   render() {
-    const { username } = this.state;
+    const { location, url } = this.state;
+
     return (
       <div>
-        {username ? <h1>{`Hello ${username}`}</h1> : <h1>Loading.. please wait!</h1>}
-        <img src={ReactImage} alt="react" />
+        <h1>Way Back!</h1>
+        <form onSubmit={this.onSubmit.bind(this)}>
+          <input type="text" onChange={this.onChange.bind(this)} value={url}></input>
+        </form>
+        {location.length > 0 &&<iframe className="frame" src={location}></iframe>}
       </div>
     );
   }
