@@ -7,6 +7,7 @@ mongoose.connect('mongodb://admin_song:123123123@cluster0-shard-00-00-4hrjv.mong
 );
 
 const db = mongoose.connection;
+
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
   // we're connected!
@@ -17,7 +18,7 @@ const app = express();
 
 app.use(express.static('dist'));
 app.use(express.json());
-app.use('/static', express.static(__dirname + '/public'));
+// app.use(express.static(__dirname + '../../public/assets'));
 app.use('/api', api);
 
 app.listen(process.env.PORT || 8080, () => console.log(`Listening on port ${process.env.PORT || 8080}!`));

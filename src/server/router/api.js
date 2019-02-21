@@ -2,18 +2,16 @@ const express = require('express');
 const scrape = require('website-scraper');
 const fs = require('fs');
 const router = express.Router();
-const mongoose = require('mongoose');
 const Webpage = require('../models/Webpage.js');
 const del = require('del');
 
-router.post('/web', async (req, res, next) => {
+router.post('/web', async (req, res, next) => { //중복요청 블럭
   const requestUrl = req.body.url;
-
-  del.sync(['public/assets/**', '!public/assets']);
+  // debugger;
+  del.sync(['public/assets', '!public']);
 
   const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
   // debugger;
-
   if (!webpagesFromDB.length) {
     const options = {
       urls: [`http://${requestUrl}`],
@@ -28,7 +26,7 @@ router.post('/web', async (req, res, next) => {
 
     scrape(options).then((result) => {
       const { type, text, filename, children } = result[0];
-      debugger;
+      // debugger
       const cssFiles = children.filter(file => file.type === 'css');
       const imageFiles = children.filter(file => !file.type);
 
@@ -46,17 +44,19 @@ router.post('/web', async (req, res, next) => {
         if (err) return next(err);
       });
 
-      res.json(`./public/assets/${requestUrl}/index.html`);
+      res.render('')
+      res.json(`./public/assets/index.html`);
     }).catch(err => next(err));
 
   } else if (webpagesFromDB.length === 1){
     const webpage = webpagesFromDB[0];
-    const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+    const webpageDirectoryPath = `./public/assets`;
 
     if (!fs.existsSync(webpageDirectoryPath)) {
       fs.mkdirSync(webpageDirectoryPath);
       fs.mkdirSync(`${webpageDirectoryPath}/css`);
       fs.mkdirSync(`${webpageDirectoryPath}/images`);
+      fs.mkdirSync(`${webpageDirectoryPath}/fonts`);
     }
 
     fs.writeFileSync(`${webpageDirectoryPath}/${webpage.filename}`, webpage.text);
@@ -72,7 +72,8 @@ router.post('/web', async (req, res, next) => {
         fs.writeFileSync(`${webpageDirectoryPath}/${image.filename}`, image.text, 'binary');
       });
     }
-
+    debugger;
+    // res.render('index.html', { root: './public/assets' });
     res.json(`${webpageDirectoryPath}/index.html`);
   }
 });

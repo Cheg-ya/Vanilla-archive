@@ -1,56 +1,68 @@
 import React, { Component, Fragment } from 'react';
+import { Route, Switch, Link } from 'react-router-dom';
 import './app.css';
-import ReactImage from './react.png';
-import Parser from 'html-react-parser';
+import Search from './Components/Search/Search';
+import Intro from './Components/Intro/Intro';
+import UpdateModal from './Components/UpdateModal/UpdateModal';
 
 export default class App extends Component {
-  constructor(props) {
-    super(props);
+  constructor(prop) {
+    super(prop);
+
     this.state = {
-      url: '',
-      location: ''
+      displayModal: false
     };
+
+    this.toggleUpdateModal = this.toggleUpdateModal.bind(this);
+    this.updateWebpage = this.updateWebpage.bind(this);
   }
 
-  onChange(e) {
-    this.setState({
-      url: e.target.value
+  toggleUpdateModal() {
+    this.setState((prevState) => {
+      return {
+        displayModal: !prevState.displayModal
+      };
     });
   }
 
-  onSubmit(e) {
-    e.preventDefault();
-
-    fetch('/api/web', {
-      method: "POST",
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url: this.state.url })
-    }).then(res => res.json()).then(result => {
-        this.setState({
-          location: result
-        });
-      }).catch(err => {
-        if (err) {
-          console.log(err);
-          alert(err.message);
-        }
-      });
+  updateWebpage() {
+    //ajax
   }
 
   render() {
-    const { location, url } = this.state;
+    const { displayModal } = this.state;
 
     return (
-      <div>
-        <h1>Way Back!</h1>
-        <form onSubmit={this.onSubmit.bind(this)}>
-          <input type="text" onChange={this.onChange.bind(this)} value={url}></input>
-        </form>
-        {location.length > 0 &&<iframe className="frame" src={location}></iframe>}
-      </div>
+      <Fragment>
+        <header className="heeaderContainer">
+          <div className="headerTitle">Vanilla Archive</div>
+          <ul className="navigation">
+            <li className="naviList">
+              <Link to="/" className="introLink">
+                <i className="fas fa-home"></i>
+                <span> Home</span>
+              </Link>
+            </li>
+            <li className="naviList">
+              <Link to="/main" className="introLink">
+                <i className="fas fa-search"></i>
+                <span> Search</span>
+              </Link>
+            </li>
+            <li className="naviList">
+              <i className="fas fa-edit"></i>
+              <button className="updateModal" onClick={this.toggleUpdateModal}> Update</button>
+            </li>
+          </ul>
+        </header>
+        <main className="introMain">
+         {displayModal && <UpdateModal updateHandler={this.updateWebpage} />}
+          <Switch>
+            <Route exact path="/" component={Intro} />
+            <Route exact path="/search" component={Search} />
+          </Switch>
+        </main>
+      </Fragment>
     );
   }
 }
