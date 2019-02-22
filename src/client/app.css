@@ -33,7 +33,6 @@ body {
   opacity: 1;
 }
 
-/* iframe overflow */
 .introMain { 
   overflow: hidden;
 }
@@ -53,6 +52,16 @@ body {
 
 .updateModal:hover {
   cursor: pointer;
+}
+
+.loaderCover {
+  width: 100%;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 3;
 }
 
 .loader {

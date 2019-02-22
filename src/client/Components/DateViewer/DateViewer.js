@@ -25,9 +25,9 @@ class DateViewer extends Component {
       return {
         fetchOnProgress: true
       };
+    }, () => {
+      this.getDates(url);
     });
-
-    this.getDates(url);
   }
 
   getDates(url) {
@@ -42,24 +42,27 @@ class DateViewer extends Component {
           fetchOnProgress: false
         };
       });
+
     }).catch(err => {
       return alert('Error: ', err);
     });
   }
 
   handleOnClick(value) {
-    const { dateHandler } = this.props;
-
-    dateHandler(value); 
+    this.props.dateHandler(value); 
   }
 
   render() {
     const { timestamps, fetchOnProgress } = this.state;
 
-    console.log(timestamps);
-    return (
-      <div className="calendarCover">
-        {fetchOnProgress && <div className="loader"><HashLoader size={200} color={'#9083fe'} /></div>}
+    return (    
+      <div className="calendarCover"> 
+        {fetchOnProgress
+        &&<div className="loaderCover">
+            <div className="loader">
+              <HashLoader size={200} color={'#9083fe'} />
+            </div>
+          </div>}
         <h2>Select Time when you'd like to travel!</h2>
         <CalendarHeatmap
           startDate={new Date('2019-01-01')}

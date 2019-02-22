@@ -16,6 +16,33 @@ const options = {
   maxDepth: 1
 };
 
+router.get('/web/search/:url/latest', async (req, res, next) => {
+  const requestUrl = req.params.url;
+
+  const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+
+  let fileExists = fs.existsSync(webpageDirectoryPath);
+
+  if (fileExists) {
+    del.sync(['public/assets/**', '!public/assets']);
+    fileExists = false;
+  }
+
+  const webpages = await Webpage.find({ url: requestUrl }).lean();
+  const latestPage = webpages[webpages.length - 1];
+
+  if (!fileExists)  {
+    createDirectoryFolders(webpageDirectoryPath);
+  }
+
+  createFiles(webpageDirectoryPath, latestPage);
+
+  res.json({
+    done: true,
+    path: `/public/assets/${requestUrl}/index.html`
+  });
+});
+
 router.get('/web/search/:url/:id', async (req, res, next) => {
   const targetId = req.params.id;
   const requestUrl = req.params.url;

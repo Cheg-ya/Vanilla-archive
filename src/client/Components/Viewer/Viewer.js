@@ -1,14 +1,61 @@
 import React, { Component } from 'react';
+import { HashLoader } from 'react-spinners';
 import './Viewer.css';
 
 class Viewer extends Component {
+  constructor(props) {
+    super(props);
+    
+    this.state = {
+      fetchOnProgress: false,
+      directoryPath: ''
+    };
+
+    this.getLatestPage = this.getLatestPage.bind(this);
+  }
+
+  componentDidMount() {
+    const { url } = this.props.match.params;
+
+    this.setState(() => {
+      return {
+        fetchOnProgress: true
+      };
+    }, () => {
+      this.getLatestPage(url);
+    })
+  }
+
+  getLatestPage(url) {
+    fetch(`/api/web/search/${url}/latest`)
+    .then(res => res.json()
+    .then(result => {
+      const { done, path } = result;
+
+      if (done) {
+        this.setState(() => {
+          return {
+            fetchOnProgress: false,
+            directoryPath: path
+          };
+        });
+      }
+    }).catch(err => {
+      return alert(err);
+    }));
+  }
+
   render() {
-    console.log(this.props.match);
-    const { url, latest } = this.props.match.params;
-    const directoryPath = `/public/assets/${url}/index.html`;
+    const { directoryPath, fetchOnProgress } = this.state;
 
     return (
       <div>
+        {fetchOnProgress
+        &&<div className="loaderCover">
+            <div className="loader">
+              <HashLoader size={200} color={'#9083fe'} />
+            </div>
+          </div>}
         <iframe className="frame" src={directoryPath}></iframe>
       </div>
     );

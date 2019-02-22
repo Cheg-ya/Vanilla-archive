@@ -1,13 +1,14 @@
 import React, { Component, Fragment } from 'react';
-import { Route, Switch, Link, Redirect } from 'react-router-dom';
+import { Route, Switch, Link } from 'react-router-dom';
+import { HashLoader } from 'react-spinners';
 import './app.css';
-import SearchModal from './Components/SearchModal/SearchModal';
 import Intro from './Components/Intro/Intro';
+import Viewer from './Components/Viewer/Viewer';
+import NoMatch from './Components/NoMatch/NoMatch';
+import DateViewer from './Components/DateViewer/DateViewer';
+import SearchModal from './Components/SearchModal/SearchModal';
 import UpdateModal from './Components/UpdateModal/UpdateModal';
 import ConfirmModal from './Components/ConfirmModal/ConfirmModal';
-import Viewer from './Components/Viewer/Viewer';
-import DateViewer from './Components/DateViewer/DateViewer';
-import { HashLoader } from 'react-spinners';
 
 export default class App extends Component {
   constructor(props) {
@@ -120,7 +121,7 @@ export default class App extends Component {
   routingHandler(result) {
     const { isSaved, url, isSingleData } = result;
     const { history } = this.props;
-    debugger;
+
     if (!isSaved && isSingleData === null) {
       return this.setState(() => {
         return {
@@ -249,7 +250,7 @@ export default class App extends Component {
       if (done) {
         const { pickedCalendarDate, targetUrl } = this.state;
         const { history, location } = this.props;
-        // debugger;
+
         const urlInfo = {
           date: pickedCalendarDate,
           url: targetUrl
@@ -271,10 +272,15 @@ export default class App extends Component {
 
   render() {
     const { displayUpdateModal, displayConfirmModal, fetchOnProgress } = this.state;
-    console.log('App\'s state: ', this.state);
+
     return (
       <Fragment>
-        {fetchOnProgress && <div className="loader"><HashLoader size={200} color={'#9083fe'} /></div>}
+        {fetchOnProgress
+        &&<div className="loaderCover">
+            <div className="loader">
+              <HashLoader size={200} color={'#9083fe'} />
+            </div>
+          </div>}
         <header className="headerContainer">
           <div className="headerTitle">Vanilla Archive</div>
           <ul className="navigation">
@@ -304,7 +310,8 @@ export default class App extends Component {
             <Route exact path="/search" render={props => <SearchModal {...props} webpageHandler={this.getWebpageHandler}/>} />
             <Route exact path="/search/:url/calendar" render={props => <DateViewer {...props} dateHandler={this.handlePickedDate} />} />
             <Route exact path="/search/:url/calendar/:date" render={props => <Viewer {...props} />} />
-            <Route exact path="/search/:url/:latest" render={props => <Viewer {...props} />} />
+            <Route exact path="/search/:url/latest" render={props => <Viewer {...props} />} />
+            <Route component={NoMatch} />
           </Switch>
         </main>
       </Fragment>

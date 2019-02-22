@@ -37,7 +37,7 @@ class UpdateModal extends Component {
   render() {
     const { url } = this.state;
     const { closeModal } = this.props;
-    console.log(this.props);
+
     return (
       <div className="updateModalContainer">
         <form className="updateModalForm" onSubmit={this.onSubmitHandler}>

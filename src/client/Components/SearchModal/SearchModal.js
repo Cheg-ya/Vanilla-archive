@@ -21,11 +21,11 @@ class SearchModal extends Component {
     });
   }
 
-  handleOnSubmit(e) {
-    e.preventDefault();
-
+  handleOnSubmit(e) {    
     const { webpageHandler } = this.props;
     const { url } = this.state;
+
+    e.preventDefault();
 
     webpageHandler(url);
   }
