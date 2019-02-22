@@ -6,7 +6,7 @@ const WebpageSchema = new Schema({
   type: String,
   text: String,
   filename: String,
-  timestamp: Date,
+  createdAt: Date,
   css: [
     {
       text: String,

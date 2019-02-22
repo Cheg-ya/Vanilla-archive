@@ -5,13 +5,18 @@ const router = express.Router();
 const Webpage = require('../models/Webpage.js');
 const del = require('del');
 
-router.post('/web', async (req, res, next) => { //중복요청 블럭
+router.post('/web', async (req, res, next) => { //중복요청 블럭 client side handling
   const requestUrl = req.body.url;
-  // debugger;
-  del.sync(['public/assets', '!public']);
+  const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+  let fileExists = fs.existsSync(webpageDirectoryPath);
+
+  if (fileExists) {
+    del.sync(['public/assets/**', '!public/assets']);
+    fileExists = false;
+  }
 
   const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
-  // debugger;
+
   if (!webpagesFromDB.length) {
     const options = {
       urls: [`http://${requestUrl}`],
@@ -24,9 +29,8 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭
       maxDepth: 1
     };
 
-    scrape(options).then((result) => {
+    scrape(options).then((result) => { //origin url 사용 필요?
       const { type, text, filename, children } = result[0];
-      // debugger
       const cssFiles = children.filter(file => file.type === 'css');
       const imageFiles = children.filter(file => !file.type);
 
@@ -35,7 +39,7 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭
         type: type,
         text: text,
         filename: filename,
-        timestamp: new Date(),
+        createdAt: new Date().toISOString(),
         css: cssFiles,
         images: imageFiles
       });
@@ -45,14 +49,17 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭
       });
 
       res.render('')
-      res.json(`./public/assets/index.html`);
-    }).catch(err => next(err));
+      res.json(`${webpageDirectoryPath}/index.html`);
+    }).catch(err => {
+      debugger;
+      // res.end()
+      return next(err);
+    });
 
-  } else if (webpagesFromDB.length === 1){
+  } else if (webpagesFromDB.length > 0){
     const webpage = webpagesFromDB[0];
-    const webpageDirectoryPath = `./public/assets`;
 
-    if (!fs.existsSync(webpageDirectoryPath)) {
+    if (!fileExists) {
       fs.mkdirSync(webpageDirectoryPath);
       fs.mkdirSync(`${webpageDirectoryPath}/css`);
       fs.mkdirSync(`${webpageDirectoryPath}/images`);
@@ -61,21 +68,82 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭
 
     fs.writeFileSync(`${webpageDirectoryPath}/${webpage.filename}`, webpage.text);
 
-    if (webpage.css) {
+    if (webpage.css.length) {
       webpage.css.forEach(css => {
         fs.writeFileSync(`${webpageDirectoryPath}/${css.filename}`, css.text);
       });
     }
 
-    if (webpage.images) {
+    if (webpage.images.length) {
       webpage.images.forEach(image => {
         fs.writeFileSync(`${webpageDirectoryPath}/${image.filename}`, image.text, 'binary');
       });
     }
-    debugger;
-    // res.render('index.html', { root: './public/assets' });
+
+    console.log('fetch data from DB');
+
     res.json(`${webpageDirectoryPath}/index.html`);
   }
+});
+
+router.post('/web/update', async (req, res, next) => { //url validator 찾아보기
+  const requestUrl = req.body.url;
+  const isUserConfirmed = req.body.userConfirm;
+  const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+  const fileExists = fs.existsSync(webpageDirectoryPath);
+
+  if (fileExists) {
+    del.sync(['public/assets/**', '!public/assets']);
+  }
+
+  const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
+
+  if (!webpagesFromDB.length && !isUserConfirmed) {
+    return res.json({
+      dataSaved: false,
+      message: 'Data hasn\'t been stored in DB yet'
+    });
+  }
+
+  const options = {
+    urls: [`http://${requestUrl}`],
+    directory: `./public/assets/${requestUrl}`,
+    sources: [
+      { selector: 'img', attr: 'src' },
+      { selector: 'link[rel="stylesheet"]', attr: 'href' }
+    ],
+    ignoreError: true,
+    maxDepth: 1
+  };
+
+  scrape(options).then((result) => {
+    const { type, text, filename, children } = result[0];
+    const cssFiles = children.filter(file => file.type === 'css');
+    const imageFiles = children.filter(file => !file.type);
+
+    const newPage = new Webpage({
+      url: requestUrl,
+      type: type,
+      text: text,
+      filename: filename,
+      createdAt: new Date().toISOString(),
+      css: cssFiles,
+      images: imageFiles
+    });
+
+    newPage.save(err => {
+      if (err) return next(err);
+    });
+    console.log('date saved in DB');
+
+    res.json({
+      dataSaved: true,
+      message: 'Data safely stored in DB'
+    });
+  }).catch(err => {
+    debugger;
+    return res.json({ message: 'The website doesn\'t exist', status: 404});
+  });
 });
 
 module.exports = router;

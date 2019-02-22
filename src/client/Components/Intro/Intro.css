@@ -39,10 +39,11 @@
   font-size: 1rem;
   background-color: #75a3fe;
   color: white;
+  opacity: 0.6;
 }
 
 .startBtn:hover {
-  opacity: 0.8;
+  opacity: 1;
 }
 
 @keyframes drop {

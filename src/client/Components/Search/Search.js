@@ -11,8 +11,10 @@ class Search extends Component {
   }
 
   onChange(e) {
+    const inputUrl = e.target.value;
+
     this.setState({
-      url: e.target.value
+      url: inputUrl
     });
   }
 
@@ -20,7 +22,7 @@ class Search extends Component {
     e.preventDefault();
 
     fetch('/api/web', {
-      method: "POST",
+      method: 'POST',
       headers: {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
@@ -43,9 +45,9 @@ class Search extends Component {
 
     return (
       <div>
-        <h1>Way Back!</h1>
+        <a href="http://localhost:3000/search/123">Way Back!</a>
         <form onSubmit={this.onSubmit.bind(this)}>
-          <input type="text" onChange={this.onChange.bind(this)} value={url}></input>
+          <input type="text" spellCheck="false" onChange={this.onChange.bind(this)} value={url}></input>
         </form>
         {directoryPath.length > 0 && <iframe className="frame" src={directoryPath}></iframe>}
       </div>
