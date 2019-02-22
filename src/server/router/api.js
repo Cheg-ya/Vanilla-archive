@@ -16,7 +16,42 @@ const options = {
   maxDepth: 1
 };
 
-router.post('/web/search', async (req, res, next) => { //중복요청 블럭 client side handling
+router.get('/web/search/:url/:id', async (req, res, next) => {
+  const targetId = req.params.id;
+  const requestUrl = req.params.url;
+  const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+
+  let fileExists = fs.existsSync(webpageDirectoryPath);
+
+  if (fileExists) {
+    del.sync(['public/assets/**', '!public/assets']);
+    fileExists = false;
+  }
+
+  const targetWebpage = await Webpage.findById({ _id: targetId }).lean();
+  
+  if (!fileExists) {
+    createDirectoryFolders(webpageDirectoryPath);
+  }
+
+  createFiles(webpageDirectoryPath, targetWebpage);
+
+  res.json({
+    done: true
+  });
+});
+
+router.get('/web/search/:url', async (req, res, next) => {
+  const requestUrl = req.params.url;
+  
+  const webpages = await Webpage.find({ url: requestUrl }).lean();
+
+  const timestamps = getUniqueTimestamps(webpages);
+
+  res.json({ timestamps });
+});
+
+router.post('/web/search', async (req, res, next) => {
   const requestUrl = req.body.url;
   const isUserConfirmed = req.body.userConfirm;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
@@ -31,7 +66,7 @@ router.post('/web/search', async (req, res, next) => { //중복요청 블럭 cli
   }
 
   const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
-  debugger;
+
   if (!webpagesFromDB.length && !isUserConfirmed) {
     return res.json({
       isSaved: false,
@@ -42,24 +77,12 @@ router.post('/web/search', async (req, res, next) => { //중복요청 블럭 cli
 
   if (!webpagesFromDB.length) {
     scrape(options).then((result) => { //origin url 사용 필요?
-      const { type, text, filename, children } = result[0];
-      const cssFiles = children.filter(file => file.type === 'css');
-      const imageFiles = children.filter(file => !file.type);
-
-      const newPage = new Webpage({
-        url: requestUrl,
-        type: type,
-        text: text,
-        filename: filename,
-        createdAt: new Date().toISOString(),
-        css: cssFiles,
-        images: imageFiles
-      });
+      const newPage = createNewPage(result[0], requestUrl);
 
       newPage.save(err => {
         if (err) return next(err);
       });
-      console.log('new data saved');
+
       res.json({
         isSaved: true,
         isSingleData: true,
@@ -73,27 +96,10 @@ router.post('/web/search', async (req, res, next) => { //중복요청 블럭 cli
     const webpage = webpagesFromDB[0];
 
     if (!fileExists) {
-      fs.mkdirSync(webpageDirectoryPath);
-      fs.mkdirSync(`${webpageDirectoryPath}/css`);
-      fs.mkdirSync(`${webpageDirectoryPath}/images`);
-      fs.mkdirSync(`${webpageDirectoryPath}/fonts`);
+      createDirectoryFolders(webpageDirectoryPath);
     }
 
-    fs.writeFileSync(`${webpageDirectoryPath}/${webpage.filename}`, webpage.text);
-
-    if (webpage.css.length) {
-      webpage.css.forEach(css => {
-        fs.writeFileSync(`${webpageDirectoryPath}/${css.filename}`, css.text);
-      });
-    }
-
-    if (webpage.images.length) {
-      webpage.images.forEach(image => {
-        fs.writeFileSync(`${webpageDirectoryPath}/${image.filename}`, image.text, 'binary');
-      });
-    }
-
-    console.log('fetch data from DB');
+    createFiles(webpageDirectoryPath, webpage);
 
     res.json({
       isSaved: false,
@@ -102,7 +108,6 @@ router.post('/web/search', async (req, res, next) => { //중복요청 블럭 cli
     });
 
   } else {
-    console.log('number of data');
     res.json({
       isSaved: false,
       isSingleData: false,
@@ -124,32 +129,82 @@ router.post('/web/update', async (req, res, next) => { //url validator 찾아보
   }
 
   scrape(options).then((result) => {
-    const { type, text, filename, children } = result[0];
-    const cssFiles = children.filter(file => file.type === 'css');
-    const imageFiles = children.filter(file => !file.type);
-
-    const newPage = new Webpage({
-      url: requestUrl,
-      type: type,
-      text: text,
-      filename: filename,
-      createdAt: new Date().toISOString(),
-      css: cssFiles,
-      images: imageFiles
-    });
+    const newPage = createNewPage(result[0], requestUrl);
 
     newPage.save(err => {
       if (err) return next(err);
     });
-    console.log('date saved in DB');
 
     res.json({
       url: requestUrl,
       message: 'Data safely stored in DB'
     });
+
   }).catch(err => {
     return res.json({ message: 'The website doesn\'t exist', status: 404});
   });
 });
+
+function getUniqueTimestamps(data) {
+  const uniqueDate = {};
+
+  data.forEach(webpage => {
+    const stringISODate = webpage.createdAt.toISOString().slice(0, 10);
+
+    if (!uniqueDate[stringISODate]) {
+      webpage.createdAt = stringISODate;
+      uniqueDate[stringISODate] = {
+        id: webpage._id.toString(),
+        date: webpage.createdAt,
+        url: webpage.url
+      };
+    }
+  });
+
+  return Object.values(uniqueDate);
+}
+
+function createNewPage(data, url) {
+  const { type, text, filename, children } = data;
+  const cssFiles = children.filter(file => file.type === 'css');
+  const imageFiles = children.filter(file => !file.type);
+
+  return new Webpage({
+    url: url,
+    type: type,
+    text: text,
+    filename: filename,
+    createdAt: new Date().toISOString(),
+    css: cssFiles,
+    images: imageFiles
+  });
+}
+
+function createDirectoryFolders(path) {
+  const cssPath = `${path}/css`;
+  const fontsPath = `${path}/fonts`;
+  const imagePath = `${path}/images`;
+
+  fs.mkdirSync(path);
+  fs.mkdirSync(cssPath);
+  fs.mkdirSync(fontsPath);
+  fs.mkdirSync(imagePath);
+}
+
+function createFiles(path, data) {
+  fs.writeFileSync(`${path}/${data.filename}`, data.text);
+
+  if (data.css.length) {
+    data.css.forEach(css => {
+      fs.writeFileSync(`${path}/${css.filename}`, css.text);
+    });
+  }
+
+  if (data.images.length) {
+    data.images.forEach(image => {
+      fs.writeFileSync(`${path}/${image.filename}`, image.text, 'binary');
+    });
+  }
+}
 
 module.exports = router;

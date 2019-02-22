@@ -6,7 +6,7 @@ import Intro from './Components/Intro/Intro';
 import UpdateModal from './Components/UpdateModal/UpdateModal';
 import ConfirmModal from './Components/ConfirmModal/ConfirmModal';
 import Viewer from './Components/Viewer/Viewer';
-import Calendar from './Components/Calendar/Calendar';
+import DateViewer from './Components/DateViewer/DateViewer';
 import { HashLoader } from 'react-spinners';
 
 export default class App extends Component {
@@ -17,8 +17,9 @@ export default class App extends Component {
       displayConfirmModal: false,
       displayUpdateModal: false,
       fetchOnProgress: false,
+      userConfirm: false,
       targetUrl:'',
-      userConfirm: false
+      pickedCalendarDate: ''
     };
 
     this.toggleUpdateModal = this.toggleUpdateModal.bind(this);
@@ -28,6 +29,8 @@ export default class App extends Component {
     this.updateWebpage = this.updateWebpage.bind(this);
     this.getWebpage = this.getWebpage.bind(this);
     this.routingHandler = this.routingHandler.bind(this);
+    this.getPickedWebpage = this.getPickedWebpage.bind(this);
+    this.handlePickedDate = this.handlePickedDate.bind(this);
   }
 
   handleUserConfirm(userDecision) {
@@ -117,25 +120,13 @@ export default class App extends Component {
   routingHandler(result) {
     const { isSaved, url, isSingleData } = result;
     const { history } = this.props;
-
+    debugger;
     if (!isSaved && isSingleData === null) {
       return this.setState(() => {
         return {
           displayConfirmModal: true
         };
       });
-    }
-
-    if (isSaved && isSingleData) {
-      this.setState(() => {
-        return {
-          fetchOnProgress: false,
-          userConfirm: false,
-          targetUrl: ''
-        };
-      });
-
-      return history.push(`/search/${url}/latest`);
     }
     
     if (!isSaved && !isSingleData) {
@@ -148,6 +139,18 @@ export default class App extends Component {
       });
 
       return history.push(`/search/${url}/calendar`);
+    }
+
+    if (isSingleData) {
+      this.setState(() => {
+        return {
+          fetchOnProgress: false,
+          userConfirm: false,
+          targetUrl: ''
+        };
+      });
+
+      return history.push(`/search/${url}/latest`);
     }
   }
 
@@ -220,6 +223,52 @@ export default class App extends Component {
     });
   }
 
+  handlePickedDate(value) {
+    const { id, date, url } = value;
+
+    this.setState(() => {
+      return {
+        fetchOnProgress: true,
+        pickedCalendarDate: date,
+        targetUrl: url
+      };
+
+    }, () => {
+      this.getPickedWebpage(id);
+    });
+  }
+
+  getPickedWebpage(id) {
+    const { targetUrl } = this.state;
+
+    fetch(`/api/web/search/${targetUrl}/${id}`)
+    .then(res => res.json())
+    .then(result => {
+      const { done } = result;
+
+      if (done) {
+        const { pickedCalendarDate, targetUrl } = this.state;
+        const { history, location } = this.props;
+        // debugger;
+        const urlInfo = {
+          date: pickedCalendarDate,
+          url: targetUrl
+        };
+
+        this.setState(() => {
+          return {
+            fetchOnProgress: false,
+            targetUrl: '',
+            pickedCalendarDate: ''
+          };
+        });
+
+        return history.push(`${location.pathname}/${urlInfo.date}`);
+      }
+
+    }).catch(err => alert(err));
+  }
+
   render() {
     const { displayUpdateModal, displayConfirmModal, fetchOnProgress } = this.state;
     console.log('App\'s state: ', this.state);
@@ -253,9 +302,9 @@ export default class App extends Component {
           <Switch>
             <Route exact path="/" component={Intro}></Route>
             <Route exact path="/search" render={props => <SearchModal {...props} webpageHandler={this.getWebpageHandler}/>} />
-            <Route exact path="/search/:url/:latest" render={props => <Viewer {...props} />} />
-            <Route exact path="/search/:url/calendar" render={props => <Calendar {...props} />} />
+            <Route exact path="/search/:url/calendar" render={props => <DateViewer {...props} dateHandler={this.handlePickedDate} />} />
             <Route exact path="/search/:url/calendar/:date" render={props => <Viewer {...props} />} />
+            <Route exact path="/search/:url/:latest" render={props => <Viewer {...props} />} />
           </Switch>
         </main>
       </Fragment>
