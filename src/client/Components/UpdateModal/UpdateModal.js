@@ -44,7 +44,7 @@ class UpdateModal extends Component {
           <div className="closeBtn" onClick={closeModal}><i className="fas fa-window-close"></i></div>
           <div className="updateModalText">Please enter URL that you'd like to archive!</div>
           <div className="updateInputField">
-            <input className="urlInput" type="text" spellCheck="false" onChange={this.handleInputChange} value={url}></input>
+            <input className="urlInput" type="text" spellCheck="false" autoFocus onChange={this.handleInputChange} value={url}></input>
           </div>
           <button className="submitBtn" type="submit">Submit</button>
         </form>

@@ -5,7 +5,7 @@ import './Viewer.css';
 class Viewer extends Component {
   constructor(props) {
     super(props);
-    
+
     this.state = {
       fetchOnProgress: false,
       directoryPath: ''
@@ -21,6 +21,7 @@ class Viewer extends Component {
       return {
         fetchOnProgress: true
       };
+
     }, () => {
       this.getLatestPage(url);
     });
@@ -53,9 +54,8 @@ class Viewer extends Component {
           };
         });
       }
-    }).catch(err => {
-      return alert(err);
-    }));
+
+    }).catch(err => alert(err)));
   }
 
   render() {

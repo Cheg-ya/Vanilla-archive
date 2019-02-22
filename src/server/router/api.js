@@ -33,16 +33,6 @@ const options = {
   maxDepth: 1
 };
 
-setInterval( function(){ 
-  const day = new Date().getDay();
-  const hour = new Date().getHours();
-  const minute = new Date().getMinutes();
-
-  if (day === 1 && hour === 10 && minute === 0) {
-    
-  }
-} , 60 * 1000);
-
 router.get('/web/search/:url/latest', async (req, res, next) => {
   const requestUrl = req.params.url;
 
@@ -77,19 +67,13 @@ router.get('/web/search/:url/:id', async (req, res, next) => {
 
   let fileExists = fs.existsSync(webpageDirectoryPath);
 
-  const validation = await checkUrlValidation(requestUrl);
-
-  if (!validation) {
-    return res.json({ message: 'Invalid URL', status: 401 });
-  }
-
   if (fileExists) {
     del.sync(['public/assets/**', '!public/assets']);
     fileExists = false;
   }
 
   const targetWebpage = await Webpage.findById({ _id: targetId }).lean();
-  
+
   if (!fileExists) {
     createDirectoryFolders(webpageDirectoryPath);
   }
@@ -103,7 +87,7 @@ router.get('/web/search/:url/:id', async (req, res, next) => {
 
 router.get('/web/search/:url', async (req, res, next) => {
   const requestUrl = req.params.url;
-  
+
   const webpages = await Webpage.find({ url: requestUrl }).lean();
 
   const timestamps = getUniqueTimestamps(webpages);
@@ -137,7 +121,7 @@ router.post('/web/search', async (req, res, next) => {
   }
 
   if (!webpagesFromDB.length) {
-    scrape(options).then((result) => { //origin url 사용 필요?
+    scrape(options).then((result) => {
       const newPage = createNewPage(result[0], requestUrl);
 
       newPage.save(err => {
@@ -190,25 +174,21 @@ router.post('/web/update', async (req, res, next) => {
     fileExists = false;
   }
 
-  scrape(options).then((result) => {
+  scrape(options).then(async (result) => {
     const newPage = createNewPage(result[0], requestUrl);
+
+    const urls = await Url.find({ url: requestUrl }).lean();
+
+    if (!urls.length) {
+      const newUrl = new Url({ url: requestUrl });
+
+      newUrl.save(err => {
+        if (err) return next(err);
+      });
+    }
 
     newPage.save(err => {
       if (err) return next(err);
-    });
-
-    Url.find({ url: requestUrl }).lean().exec((err, result) => {
-      console.log(result);
-
-      if (!result.length) {
-        const newUrl = new Url({ url: requestUrl });
-
-        newUrl.save(err => {
-          if (err) return next(err);
-        });
-      }
-
-      return;
     });
 
     res.json({
@@ -241,6 +221,7 @@ function getUniqueTimestamps(data) {
 }
 
 function createNewPage(data, url) {
+
   const { type, text, filename, children } = data;
   const cssFiles = children.filter(file => file.type === 'css');
   const imageFiles = children.filter(file => !file.type);

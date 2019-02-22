@@ -100,7 +100,7 @@ export default class App extends Component {
           };
         });
 
-        return alert(result.message); 
+        return alert(result.message);
       }
 
       this.routingHandler(result);
@@ -129,7 +129,7 @@ export default class App extends Component {
         };
       });
     }
-    
+
     if (!isSaved && !isSingleData) {
       this.setState(() => {
         return {
@@ -172,6 +172,7 @@ export default class App extends Component {
         fetchOnProgress: true,
         targetUrl: url
       };
+
     }), this.updateWebpage);
   }
 
@@ -195,7 +196,7 @@ export default class App extends Component {
           };
         });
 
-        return alert(result.message); 
+        return alert(result.message);
       }
 
       const { url } = result;

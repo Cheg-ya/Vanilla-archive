@@ -49,14 +49,14 @@ class DateViewer extends Component {
   }
 
   handleOnClick(value) {
-    this.props.dateHandler(value); 
+    this.props.dateHandler(value);
   }
 
   render() {
     const { timestamps, fetchOnProgress } = this.state;
 
-    return (    
-      <div className="calendarCover"> 
+    return (
+      <div className="calendarCover">
         {fetchOnProgress
         &&<div className="loaderCover">
             <div className="loader">

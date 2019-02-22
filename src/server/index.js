@@ -8,12 +8,6 @@ mongoose.connect('mongodb://admin_song:123123123@cluster0-shard-00-00-4hrjv.mong
 
 const db = mongoose.connection;
 
-db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
-  // we're connected!
-  console.log('connected');
-});
-
 const app = express();
 
 app.use(express.static('dist'));

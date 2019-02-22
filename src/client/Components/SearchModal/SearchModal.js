@@ -21,7 +21,7 @@ class SearchModal extends Component {
     });
   }
 
-  handleOnSubmit(e) {    
+  handleOnSubmit(e) {
     const { webpageHandler } = this.props;
     const { url } = this.state;
 
@@ -39,7 +39,7 @@ class SearchModal extends Component {
           <form className="searchModalForm" onSubmit={this.handleOnSubmit}>
             <Link className="closeBtn" to="/"><i className="fas fa-window-close"></i></Link>
             <div className="searchModalText"><span>What would you like to search?</span></div>
-            <input className="searchInputField" type="text" spellCheck="false" onChange={this.storeUrl} value={url}></input>
+            <input className="searchInputField" type="text" spellCheck="false" autoFocus onChange={this.storeUrl} value={url}></input>
             <button className="submitBtn" type="submit">Submit</button>
           </form>
         </div>
