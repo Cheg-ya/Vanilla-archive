@@ -14,12 +14,12 @@ class UpdateModal extends Component {
   }
 
   onSubmitHandler(e) {
-    const { updateHandler } = this.props;
+    const { webpageHandler } = this.props;
     const { url } = this.state;
-    
+
     e.preventDefault();
 
-    updateHandler(url);
+    webpageHandler(url);
 
     this.setState(() => ({ url: '' }));
   }
@@ -37,7 +37,7 @@ class UpdateModal extends Component {
   render() {
     const { url } = this.state;
     const { closeModal } = this.props;
-
+    console.log(this.props);
     return (
       <div className="updateModalContainer">
         <form className="updateModalForm" onSubmit={this.onSubmitHandler}>

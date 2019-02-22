@@ -1,14 +1,17 @@
 import React, { Component, Fragment } from 'react';
-import { Route, Switch, Link } from 'react-router-dom';
+import { Route, Switch, Link, Redirect } from 'react-router-dom';
 import './app.css';
-import Search from './Components/Search/Search';
+import SearchModal from './Components/SearchModal/SearchModal';
 import Intro from './Components/Intro/Intro';
 import UpdateModal from './Components/UpdateModal/UpdateModal';
 import ConfirmModal from './Components/ConfirmModal/ConfirmModal';
+import Viewer from './Components/Viewer/Viewer';
+import Calendar from './Components/Calendar/Calendar';
+import { HashLoader } from 'react-spinners';
 
 export default class App extends Component {
-  constructor(prop) {
-    super(prop);
+  constructor(props) {
+    super(props);
 
     this.state = {
       displayConfirmModal: false,
@@ -20,16 +23,11 @@ export default class App extends Component {
 
     this.toggleUpdateModal = this.toggleUpdateModal.bind(this);
     this.handleUserConfirm = this.handleUserConfirm.bind(this);
+    this.getWebpageHandler = this.getWebpageHandler.bind(this);
+    this.updateWebpageHandler = this.updateWebpageHandler.bind(this);
     this.updateWebpage = this.updateWebpage.bind(this);
-    this.updateHandler = this.updateHandler.bind(this);
-  }
-
-  toggleUpdateModal() {
-    this.setState((prevState) => {
-      return {
-        displayUpdateModal: !prevState.displayUpdateModal
-      };
-    });
+    this.getWebpage = this.getWebpage.bind(this);
+    this.routingHandler = this.routingHandler.bind(this);
   }
 
   handleUserConfirm(userDecision) {
@@ -48,10 +46,112 @@ export default class App extends Component {
         displayConfirmModal: !prevState.displayConfirmModal,
         userConfirm: !prevState.userConfirm
       };
-    }, this.updateWebpage);
+    }, this.getWebpage);
   }
 
-  updateHandler(url) {
+  toggleUpdateModal() {
+    this.setState((prevState) => {
+      return {
+        displayUpdateModal: !prevState.displayUpdateModal
+      };
+    });
+  }
+
+  getWebpageHandler(url) {
+    if (url.length === 0) {
+      return alert('invalid URL');
+    }
+
+    const { fetchOnProgress } = this.state;
+
+    if (fetchOnProgress) {
+      return alert('App is in Progress');
+    }
+
+    this.setState((() => {
+      return {
+        fetchOnProgress: true,
+        targetUrl: url
+      };
+    }), this.getWebpage);
+  }
+
+  getWebpage() {
+    const { targetUrl, userConfirm } = this.state;
+
+    fetch('/api/web/search', {
+      method: 'POST',
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: targetUrl, userConfirm: userConfirm })
+    }).then(res => res.json()).then(result => {
+      if (result.status === 404) {
+        this.setState(() => {
+          return {
+            fetchOnProgress: false,
+            userConfirm: false,
+            targetUrl: ''
+          };
+        });
+
+        return alert(result.message); 
+      }
+
+      this.routingHandler(result);
+
+    }).catch(err => {
+      this.setState(() => {
+        return {
+          fetchOnProgress: false,
+          userConfirm: false,
+          targetUrl: ''
+        };
+      });
+
+      return alert('Error: ' + err.message);
+    });
+  }
+
+  routingHandler(result) {
+    const { isSaved, url, isSingleData } = result;
+    const { history } = this.props;
+
+    if (!isSaved && isSingleData === null) {
+      return this.setState(() => {
+        return {
+          displayConfirmModal: true
+        };
+      });
+    }
+
+    if (isSaved && isSingleData) {
+      this.setState(() => {
+        return {
+          fetchOnProgress: false,
+          userConfirm: false,
+          targetUrl: ''
+        };
+      });
+
+      return history.push(`/search/${url}/latest`);
+    }
+    
+    if (!isSaved && !isSingleData) {
+      this.setState(() => {
+        return {
+          fetchOnProgress: false,
+          userConfirm: false,
+          targetUrl: ''
+        };
+      });
+
+      return history.push(`/search/${url}/calendar`);
+    }
+  }
+
+  updateWebpageHandler(url) {
     if (url.length === 0) {
       return alert('invalid URL');
     }
@@ -72,7 +172,7 @@ export default class App extends Component {
   }
 
   updateWebpage() {
-    const { targetUrl, userConfirm } = this.state;
+    const { targetUrl } = this.state;
 
     fetch('/api/web/update', {
       method: 'POST',
@@ -80,7 +180,7 @@ export default class App extends Component {
         'Accept': 'application/json',
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify({ url: targetUrl, userConfirm: userConfirm })
+      body: JSON.stringify({ url: targetUrl })
     }).then(res => res.json()).then(result => {
       if (result.status === 404) {
         this.setState(() => {
@@ -93,26 +193,19 @@ export default class App extends Component {
 
         return alert(result.message); 
       }
-      
-      const { dataSaved } = result;
 
-      if (!dataSaved) {
-        return this.setState(() => {
-          return {
-            displayConfirmModal: true
-          };
-        });
-      }
+      const { url } = result;
+      const { history } = this.props;
 
-      if (dataSaved) {
-        return this.setState(() => {
-          return {
-            fetchOnProgress: false,
-            userConfirm: false,
-            targetUrl: ''
-          };
-        });
-      }
+      this.setState(() => {
+        return {
+          fetchOnProgress: false,
+          userConfirm: false,
+          targetUrl: ''
+        };
+      });
+
+      history.push(`/search/${url}/latest`);
 
     }).catch(err => {
       this.setState(() => {
@@ -128,10 +221,11 @@ export default class App extends Component {
   }
 
   render() {
-    const { displayUpdateModal, displayConfirmModal } = this.state;
+    const { displayUpdateModal, displayConfirmModal, fetchOnProgress } = this.state;
     console.log('App\'s state: ', this.state);
     return (
       <Fragment>
+        {fetchOnProgress && <div className="loader"><HashLoader size={200} color={'#9083fe'} /></div>}
         <header className="headerContainer">
           <div className="headerTitle">Vanilla Archive</div>
           <ul className="navigation">
@@ -155,10 +249,13 @@ export default class App extends Component {
         </header>
         <main className="introMain">
           {displayConfirmModal && <ConfirmModal confirmHandler={this.handleUserConfirm}/>}
-          {displayUpdateModal && <UpdateModal updateHandler={this.updateHandler} closeModal={this.toggleUpdateModal}/>}
+          {displayUpdateModal && <UpdateModal webpageHandler={this.updateWebpageHandler} closeModal={this.toggleUpdateModal}/>}
           <Switch>
-            <Route exact path="/" component={Intro} />
-            <Route exact path="/search" component={Search} />
+            <Route exact path="/" component={Intro}></Route>
+            <Route exact path="/search" render={props => <SearchModal {...props} webpageHandler={this.getWebpageHandler}/>} />
+            <Route exact path="/search/:url/:latest" render={props => <Viewer {...props} />} />
+            <Route exact path="/search/:url/calendar" render={props => <Calendar {...props} />} />
+            <Route exact path="/search/:url/calendar/:date" render={props => <Viewer {...props} />} />
           </Switch>
         </main>
       </Fragment>

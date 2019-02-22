@@ -5,10 +5,25 @@ const router = express.Router();
 const Webpage = require('../models/Webpage.js');
 const del = require('del');
 
-router.post('/web', async (req, res, next) => { //중복요청 블럭 client side handling
+const options = {
+  urls: [],
+  directory: '',
+  sources: [
+    { selector: 'img', attr: 'src' },
+    { selector: 'link[rel="stylesheet"]', attr: 'href' }
+  ],
+  ignoreError: true,
+  maxDepth: 1
+};
+
+router.post('/web/search', async (req, res, next) => { //중복요청 블럭 client side handling
   const requestUrl = req.body.url;
+  const isUserConfirmed = req.body.userConfirm;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
   let fileExists = fs.existsSync(webpageDirectoryPath);
+
+  options.urls = [`http://${requestUrl}`];
+  options.directory = `./public/assets/${requestUrl}`;
 
   if (fileExists) {
     del.sync(['public/assets/**', '!public/assets']);
@@ -16,19 +31,16 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭 client sid
   }
 
   const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
+  debugger;
+  if (!webpagesFromDB.length && !isUserConfirmed) {
+    return res.json({
+      isSaved: false,
+      isSingleData: null,
+      message: 'Data hasn\'t been stored in DB yet'
+    });
+  }
 
   if (!webpagesFromDB.length) {
-    const options = {
-      urls: [`http://${requestUrl}`],
-      directory: `./public/assets/${requestUrl}`,
-      sources: [
-        { selector: 'img', attr: 'src' },
-        { selector: 'link[rel="stylesheet"]', attr: 'href' }
-      ],
-      ignoreError: true,
-      maxDepth: 1
-    };
-
     scrape(options).then((result) => { //origin url 사용 필요?
       const { type, text, filename, children } = result[0];
       const cssFiles = children.filter(file => file.type === 'css');
@@ -47,16 +59,17 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭 client sid
       newPage.save(err => {
         if (err) return next(err);
       });
-
-      res.render('')
-      res.json(`${webpageDirectoryPath}/index.html`);
+      console.log('new data saved');
+      res.json({
+        isSaved: true,
+        isSingleData: true,
+        url: requestUrl
+      });
     }).catch(err => {
-      debugger;
-      // res.end()
-      return next(err);
+      return res.json({ message: 'The website doesn\'t exist', status: 404});
     });
 
-  } else if (webpagesFromDB.length > 0){
+  } else if (webpagesFromDB.length === 1) {
     const webpage = webpagesFromDB[0];
 
     if (!fileExists) {
@@ -82,39 +95,33 @@ router.post('/web', async (req, res, next) => { //중복요청 블럭 client sid
 
     console.log('fetch data from DB');
 
-    res.json(`${webpageDirectoryPath}/index.html`);
+    res.json({
+      isSaved: false,
+      url: requestUrl,
+      isSingleData: true
+    });
+
+  } else {
+    console.log('number of data');
+    res.json({
+      isSaved: false,
+      isSingleData: false,
+      url: requestUrl
+    });
   }
 });
 
 router.post('/web/update', async (req, res, next) => { //url validator 찾아보기
   const requestUrl = req.body.url;
-  const isUserConfirmed = req.body.userConfirm;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
   const fileExists = fs.existsSync(webpageDirectoryPath);
+
+  options.urls = [`http://${requestUrl}`];
+  options.directory = `./public/assets/${requestUrl}`;
 
   if (fileExists) {
     del.sync(['public/assets/**', '!public/assets']);
   }
-
-  const webpagesFromDB = await Webpage.find({ url: requestUrl }).lean();
-
-  if (!webpagesFromDB.length && !isUserConfirmed) {
-    return res.json({
-      dataSaved: false,
-      message: 'Data hasn\'t been stored in DB yet'
-    });
-  }
-
-  const options = {
-    urls: [`http://${requestUrl}`],
-    directory: `./public/assets/${requestUrl}`,
-    sources: [
-      { selector: 'img', attr: 'src' },
-      { selector: 'link[rel="stylesheet"]', attr: 'href' }
-    ],
-    ignoreError: true,
-    maxDepth: 1
-  };
 
   scrape(options).then((result) => {
     const { type, text, filename, children } = result[0];
@@ -137,11 +144,10 @@ router.post('/web/update', async (req, res, next) => { //url validator 찾아보
     console.log('date saved in DB');
 
     res.json({
-      dataSaved: true,
+      url: requestUrl,
       message: 'Data safely stored in DB'
     });
   }).catch(err => {
-    debugger;
     return res.json({ message: 'The website doesn\'t exist', status: 404});
   });
 });
