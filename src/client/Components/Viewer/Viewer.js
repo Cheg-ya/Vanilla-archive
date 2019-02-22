@@ -23,14 +23,27 @@ class Viewer extends Component {
       };
     }, () => {
       this.getLatestPage(url);
-    })
+    });
   }
 
   getLatestPage(url) {
     fetch(`/api/web/search/${url}/latest`)
     .then(res => res.json()
     .then(result => {
-      const { done, path } = result;
+      const { done, path, status, message } = result;
+      const { history } = this.props;
+
+      if (status) {
+        this.setState(() => {
+          return {
+            fetchOnProgress: false
+          };
+        });
+
+        alert(message);
+
+        return history.push('/');
+      }
 
       if (done) {
         this.setState(() => {

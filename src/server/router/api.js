@@ -3,7 +3,24 @@ const scrape = require('website-scraper');
 const fs = require('fs');
 const router = express.Router();
 const Webpage = require('../models/Webpage.js');
+const Url = require('../models/Urls');
 const del = require('del');
+const cron = require('node-cron');
+const axios = require('axios');
+
+cron.schedule('0 0 10 * * Mon', async () => {
+  const lists = await Url.find().lean();
+
+  lists.forEach(({ url }) => {
+    axios({
+      method:'post',
+      url: 'http://localhost:3000/api/web/update',
+      data: {
+        url: url
+      }
+    }).catch(err => next(err));
+  });
+});
 
 const options = {
   urls: [],
@@ -15,6 +32,16 @@ const options = {
   ignoreError: true,
   maxDepth: 1
 };
+
+setInterval( function(){ 
+  const day = new Date().getDay();
+  const hour = new Date().getHours();
+  const minute = new Date().getMinutes();
+
+  if (day === 1 && hour === 10 && minute === 0) {
+    
+  }
+} , 60 * 1000);
 
 router.get('/web/search/:url/latest', async (req, res, next) => {
   const requestUrl = req.params.url;
@@ -50,6 +77,12 @@ router.get('/web/search/:url/:id', async (req, res, next) => {
 
   let fileExists = fs.existsSync(webpageDirectoryPath);
 
+  const validation = await checkUrlValidation(requestUrl);
+
+  if (!validation) {
+    return res.json({ message: 'Invalid URL', status: 401 });
+  }
+
   if (fileExists) {
     del.sync(['public/assets/**', '!public/assets']);
     fileExists = false;
@@ -82,6 +115,7 @@ router.post('/web/search', async (req, res, next) => {
   const requestUrl = req.body.url;
   const isUserConfirmed = req.body.userConfirm;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
+
   let fileExists = fs.existsSync(webpageDirectoryPath);
 
   options.urls = [`http://${requestUrl}`];
@@ -143,16 +177,17 @@ router.post('/web/search', async (req, res, next) => {
   }
 });
 
-router.post('/web/update', async (req, res, next) => { //url validator 찾아보기
+router.post('/web/update', async (req, res, next) => {
   const requestUrl = req.body.url;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
-  const fileExists = fs.existsSync(webpageDirectoryPath);
+  let fileExists = fs.existsSync(webpageDirectoryPath);
 
   options.urls = [`http://${requestUrl}`];
   options.directory = `./public/assets/${requestUrl}`;
 
   if (fileExists) {
     del.sync(['public/assets/**', '!public/assets']);
+    fileExists = false;
   }
 
   scrape(options).then((result) => {
@@ -160,6 +195,20 @@ router.post('/web/update', async (req, res, next) => { //url validator 찾아보
 
     newPage.save(err => {
       if (err) return next(err);
+    });
+
+    Url.find({ url: requestUrl }).lean().exec((err, result) => {
+      console.log(result);
+
+      if (!result.length) {
+        const newUrl = new Url({ url: requestUrl });
+
+        newUrl.save(err => {
+          if (err) return next(err);
+        });
+      }
+
+      return;
     });
 
     res.json({

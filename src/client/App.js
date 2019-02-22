@@ -91,7 +91,7 @@ export default class App extends Component {
       },
       body: JSON.stringify({ url: targetUrl, userConfirm: userConfirm })
     }).then(res => res.json()).then(result => {
-      if (result.status === 404) {
+      if (result.status) {
         this.setState(() => {
           return {
             fetchOnProgress: false,
@@ -186,7 +186,7 @@ export default class App extends Component {
       },
       body: JSON.stringify({ url: targetUrl })
     }).then(res => res.json()).then(result => {
-      if (result.status === 404) {
+      if (result.status) {
         this.setState(() => {
           return {
             fetchOnProgress: false,
