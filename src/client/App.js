@@ -296,11 +296,11 @@ export default class App extends Component {
           </ul>
         </header>
         <main className="introMain">
-          {displayConfirmModal && <ConfirmModal confirmHandler={this.handleUserConfirm}/>}
-          {displayUpdateModal && <UpdateModal webpageHandler={this.updateWebpageHandler} closeModal={this.toggleUpdateModal}/>}
+          {displayConfirmModal && <ConfirmModal confirmHandler={this.handleUserConfirm} />}
+          {displayUpdateModal && <UpdateModal webpageHandler={this.updateWebpageHandler} closeModal={this.toggleUpdateModal} />}
           <Switch>
             <Route exact path="/" component={Intro}></Route>
-            <Route exact path="/search" render={props => <SearchModal {...props} webpageHandler={this.getWebpageHandler}/>} />
+            <Route exact path="/search" render={props => <SearchModal {...props} webpageHandler={this.getWebpageHandler} />} />
             <Route exact path="/search/:url/calendar" render={props => <DateViewer {...props} dateHandler={this.handlePickedDate} />} />
             <Route exact path="/search/:url/calendar/:date" render={props => <Viewer {...props} />} />
             <Route exact path="/search/:url/latest" render={props => <Viewer {...props} />} />

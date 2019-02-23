@@ -54,7 +54,6 @@ class Viewer extends Component {
           };
         });
       }
-
     }).catch(err => alert(err)));
   }
 
