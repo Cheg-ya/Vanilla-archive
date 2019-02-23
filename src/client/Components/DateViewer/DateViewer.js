@@ -31,10 +31,6 @@ class DateViewer extends Component {
   }
 
   getDates(url) {
-    if (!url.length || url.split('.').length < 3) {
-      return alert('Invalid URL!');
-    }
-
     fetch(`/api/web/search/${url}`)
     .then(res => res.json())
     .then(result => {

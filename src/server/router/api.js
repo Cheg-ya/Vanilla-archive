@@ -7,7 +7,7 @@ const Url = require('../models/Urls');
 const del = require('del');
 const cron = require('node-cron');
 const axios = require('axios');
-const url = require('url');
+const isValid = require('url');
 
 cron.schedule('0 0 10 * * Mon', async () => {
   const lists = await Url.find().lean();
@@ -35,15 +35,7 @@ const options = {
 };
 
 router.get('/web/search/:url/latest', async (req, res, next) => {
-  let requestUrl = req.body.url;
-
-  try {
-    await axios.get(requestUrl);
-  } catch(err) {
-    return res.json({ message: 'Invalid URL', status: 401 });
-  }
-
-  requestUrl = url.parse(requestUrl).hostname;
+  const requestUrl = req.params.url;
 
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
 
@@ -71,16 +63,7 @@ router.get('/web/search/:url/latest', async (req, res, next) => {
 
 router.get('/web/search/:url/:id', async (req, res, next) => {
   const targetId = req.params.id;
-  let requestUrl = req.body.url;
-
-  try {
-    await axios.get(requestUrl);
-  } catch(err) {
-    return res.json({ message: 'Invalid URL', status: 401 });
-  }
-
-  requestUrl = url.parse(requestUrl).hostname;
-
+  const requestUrl = req.body.url;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
 
   let fileExists = fs.existsSync(webpageDirectoryPath);
@@ -104,16 +87,7 @@ router.get('/web/search/:url/:id', async (req, res, next) => {
 });
 
 router.get('/web/search/:url', async (req, res, next) => {
-  let requestUrl = req.body.url;
-
-  try {
-    await axios.get(requestUrl);
-  } catch(err) {
-    return res.json({ message: 'Invalid URL', status: 401 });
-  }
-
-  requestUrl = url.parse(requestUrl).hostname;
-
+  const requestUrl = req.params.url;
   const webpages = await Webpage.find({ url: requestUrl }).lean();
 
   const timestamps = getUniqueTimestamps(webpages);
@@ -127,10 +101,10 @@ router.post('/web/search', async (req, res, next) => {
   try {
     await axios.get(requestUrl);
   } catch(err) {
-    return res.json({ message: 'Invalid URL', status: 401 });
+    return res.json({ message: 'Invalid URL', status: 401});
   }
 
-  requestUrl = url.parse(requestUrl).hostname;
+  requestUrl = isValid.parse(requestUrl).hostname;
 
   const isUserConfirmed = req.body.userConfirm;
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
@@ -202,10 +176,10 @@ router.post('/web/update', async (req, res, next) => {
   try {
     await axios.get(requestUrl);
   } catch(err) {
-    return res.json({ message: 'Invalid URL', status: 401 });
+    return res.json({ message: 'Invalid URL', status: 401});
   }
 
-  requestUrl = url.parse(requestUrl).hostname;
+  requestUrl = isValid.parse(requestUrl).hostname;
 
   const webpageDirectoryPath = `./public/assets/${requestUrl}`;
   let fileExists = fs.existsSync(webpageDirectoryPath);
