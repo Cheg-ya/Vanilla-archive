@@ -62,10 +62,6 @@ export default class App extends Component {
   }
 
   getWebpageHandler(url) {
-    if (url.length === 0) {
-      return alert('invalid URL');
-    }
-
     const { fetchOnProgress } = this.state;
 
     if (fetchOnProgress) {
@@ -156,10 +152,6 @@ export default class App extends Component {
   }
 
   updateWebpageHandler(url) {
-    if (url.length === 0) {
-      return alert('invalid URL');
-    }
-
     const { fetchOnProgress } = this.state;
 
     if (fetchOnProgress) {

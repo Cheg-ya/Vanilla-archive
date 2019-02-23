@@ -28,6 +28,10 @@ class Viewer extends Component {
   }
 
   getLatestPage(url) {
+    if (!url.length || url.split('.').length < 3) {
+      return alert('Invalid URL!');
+    }
+
     fetch(`/api/web/search/${url}/latest`)
     .then(res => res.json()
     .then(result => {

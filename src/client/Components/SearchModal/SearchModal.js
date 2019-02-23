@@ -37,9 +37,22 @@ class SearchModal extends Component {
       <div className="searchModalContainer">
         <div className="searchModalCover">
           <form className="searchModalForm" onSubmit={this.handleOnSubmit}>
-            <Link className="closeBtn" to="/"><i className="fas fa-window-close"></i></Link>
-            <div className="searchModalText"><span>What would you like to search?</span></div>
-            <input className="searchInputField" type="text" spellCheck="false" autoFocus onChange={this.storeUrl} value={url}></input>
+            <Link className="closeBtn" to="/">
+              <i className="fas fa-window-close"></i>
+            </Link>
+            <div className="searchModalText">
+              <span>What would you like to search?</span>
+            </div>
+            <input
+              className="searchInputField"
+              type="text"
+              spellCheck="false"
+              autoFocus
+              onChange={this.storeUrl}
+              value={url}
+              placeholder="Ex) http://URL"
+            >
+            </input>
             <button className="submitBtn" type="submit">Submit</button>
           </form>
         </div>
