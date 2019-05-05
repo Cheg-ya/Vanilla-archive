@@ -2,11 +2,13 @@ const express = require('express');
 const api = require('./router/api');
 const mongoose = require('mongoose');
 
-mongoose.connect('mongodb://admin_song:123123123@cluster0-shard-00-00-4hrjv.mongodb.net:27017,cluster0-shard-00-01-4hrjv.mongodb.net:27017,cluster0-shard-00-02-4hrjv.mongodb.net:27017/vanilla-archive?ssl=true&replicaSet=Cluster0-shard-0&authSource=admin&retryWrites=true',
-  { useNewUrlParser: true }
-);
+mongoose.connect('mongodb+srv://guest:123123123@cluster0-4hrjv.mongodb.net/vanilla-archive', { useNewUrlParser: true });
 
 const db = mongoose.connection;
+
+db.once('open', () => {
+  console.log('DB connected');
+});
 
 const app = express();
 
